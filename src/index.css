@@ -1,0 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Nunito:wght@400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Nunito", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Cinzel", serif;
+}
+
+/* Custom animation effects and glow */
+@keyframes pg {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(0, 200, 160, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(0, 200, 160, 0.6);
+  }
+}
+
+.glow-glow {
+  animation: pg 3s infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+.floating-effect {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* Scrollbar customizations */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 200, 160, 0.2);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 200, 160, 0.4);
+}

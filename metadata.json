@@ -1,0 +1,6 @@
+{
+  "name": "Senda de Valores",
+  "description": "Un juego interactivo de retos reales para jóvenes de 11 a 16 años. Completa desafíos en tu comunidad, reflexiona sobre tus vivencias bajo tutela, gana XP y conviértete en una leyenda de valores éticos y ciudadanía activa.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
