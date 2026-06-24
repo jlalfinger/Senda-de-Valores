@@ -390,6 +390,9 @@ export default function App() {
   const [showSecurityModal, setShowSecurityModal] = useState(false);
   const [integrityScanCompleted, setIntegrityScanCompleted] = useState(false);
   const [isScanningIntegrity, setIsScanningIntegrity] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isAppInstallable, setIsAppInstallable] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
   const [securityLogs, setSecurityLogs] = useState<string[]>([
     `[${new Date().toLocaleTimeString()}] Inicializando núcleo de seguridad local Senda de Valores v4...`,
     `[${new Date().toLocaleTimeString()}] Aislamiento de Red: ACTIVO. Se bloqueó toda conexión externa.`,
@@ -498,6 +501,65 @@ export default function App() {
       addSecurityLog('[OK] Base de Datos Local: LocalStorage estructurado bajo esquema v4 sin anomalías.');
       showToast('¡Verificación completa! Todos los archivos de la app son 100% auténticos y seguros.');
     }, 1500);
+  };
+
+  // Listen for PWA installation prompts
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setIsAppInstallable(true);
+      addSecurityLog('¡Dispositivo compatible detectado! El instalador offline está listo.');
+    };
+
+    const handleAppInstalled = () => {
+      setIsStandalone(true);
+      setIsAppInstallable(false);
+      setDeferredPrompt(null);
+      addSecurityLog('¡Aplicación instalada con éxito! Ahora vive nativamente en tu dispositivo.');
+      showToast('¡Senda de Valores instalada en tu equipo!');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    // Detect if already running as PWA / Standalone with defensive checks
+    const isStandaloneMode = 
+      (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+      (typeof window !== 'undefined' && window.navigator && (window.navigator as any).standalone === true);
+
+    if (isStandaloneMode) {
+      setIsStandalone(true);
+      addSecurityLog('Ejecución Standalone: Activa (Aplicación abierta como app nativa offline).');
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (deferredPrompt) {
+      addSecurityLog('Iniciando diálogo nativo de instalación de la aplicación...');
+      try {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        addSecurityLog(`Resultado del diálogo de instalación: ${outcome}`);
+        if (outcome === 'accepted') {
+          setIsStandalone(true);
+          setIsAppInstallable(false);
+          setDeferredPrompt(null);
+        }
+      } catch (err) {
+        addSecurityLog(`[ADVERTENCIA] Error al solicitar la instalación nativa: ${err}`);
+        setShowSecurityModal(true);
+      }
+    } else {
+      // Show local modal with exact instructions
+      setShowSecurityModal(true);
+      addSecurityLog('Mostrando consola con instrucciones de instalación manual.');
+    }
   };
 
   // Loaded at startup
@@ -1155,6 +1217,34 @@ export default function App() {
                 <ShieldAlert className="text-cyan-400" size={18} />
                 <span>0 Datos Nube</span>
               </div>
+            </div>
+
+            <div className="w-full max-w-sm mb-6">
+              {isStandalone ? (
+                <div className="w-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold rounded-xl py-3 px-4 text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/5">
+                  <CheckCircle2 size={16} className="text-emerald-400" />
+                  <span className="uppercase tracking-wider">✓ App instalada nativamente en tu equipo</span>
+                </div>
+              ) : (
+                <button
+                  onClick={handleInstallApp}
+                  className={`w-full font-black text-xs py-3.5 px-4 rounded-xl border transition-all duration-300 flex items-center justify-center gap-2 shadow-lg cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0.5 ${
+                    isAppInstallable
+                      ? 'bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-slate-950 border-teal-400 animate-pulse font-extrabold shadow-teal-500/10'
+                      : 'bg-slate-900 hover:bg-slate-850 text-teal-400 border-teal-500/35 shadow-slate-950/50'
+                  }`}
+                >
+                  <Download size={14} className={isAppInstallable ? 'animate-bounce' : ''} />
+                  <span className="uppercase tracking-wider">
+                    {isAppInstallable ? 'Instalar Aplicación en este Equipo' : 'Instalar / Descargar App Offline'}
+                  </span>
+                </button>
+              )}
+              <p className="text-[10px] text-slate-500 mt-1.5 leading-normal">
+                {isStandalone
+                  ? 'Estás ejecutando la aplicación de forma local, desconectada y segura.'
+                  : 'Instala la app para usarla sin internet, sin compartir datos en la nube y de forma segura.'}
+              </p>
             </div>
 
             <button
