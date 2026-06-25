@@ -417,6 +417,7 @@ export default function App() {
   const [toastMessage, setToastMessage] = useState('');
 
   // Parent restore lives state
+  const [showParentsGuide, setShowParentsGuide] = useState(false);
   const [showRechargeModal, setShowRechargeModal] = useState(false);
   const [rechargePin, setRechargePin] = useState('');
   const [rechargeError, setRechargeError] = useState(false);
@@ -1420,6 +1421,27 @@ export default function App() {
               <div>
                 <h2 className="font-display text-lg font-bold text-amber-400">Portal de Tutela</h2>
                 <p className="text-xs text-slate-400">Aprobación de juego & Consentimiento COPPA/GDPR</p>
+              </div>
+            </div>
+
+            {/* Guía para Padres Callout */}
+            <div className="bg-amber-400/5 border border-amber-400/20 rounded-xl p-3.5 mb-5 flex items-start gap-3">
+              <div className="bg-amber-400/10 p-2 rounded-lg text-amber-400 flex-shrink-0 mt-0.5">
+                <BookOpen size={16} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-[#dceef0] leading-snug">¿Cómo beneficia este juego a tu menor?</p>
+                <p className="text-[11px] text-slate-400 mt-0.5 leading-normal">
+                  Lee la guía educativa oficial con los beneficios pedagógicos, familiares y las garantías de privacidad 100% offline.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowParentsGuide(true)}
+                  className="mt-2 text-xs font-black text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0"
+                >
+                  <span>Abrir Guía Informativa</span>
+                  <ChevronRight size={12} className="animate-pulse" />
+                </button>
               </div>
             </div>
 
@@ -3030,11 +3052,148 @@ export default function App() {
             </div>
 
             <button
+              onClick={() => {
+                setShowPolicyModal(false);
+                setShowParentsGuide(true);
+              }}
+              className="w-full bg-[#0d1424] hover:bg-slate-900 text-amber-400 border border-amber-400/30 font-bold text-xs py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              <BookOpen size={14} />
+              <span>Ver Guía Educativa para Padres</span>
+            </button>
+
+            <button
               onClick={() => setShowPolicyModal(false)}
               className="w-full bg-teal-400 hover:bg-teal-300 text-slate-950 font-black text-xs py-3 rounded-xl transition cursor-pointer"
             >
               Cerrar
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* F. PARENTS AND GUARDIANS EDUCATIONAL GUIDE MODAL */}
+      {showParentsGuide && (
+        <div className="fixed inset-0 z-50 bg-[#080c18]/95 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#0d1424] border border-teal-500/30 rounded-2xl p-6 max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl shadow-amber-500/5">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4 flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-amber-400/10 border border-amber-400/20 flex items-center justify-center text-amber-400">
+                  <BookOpen size={20} />
+                </div>
+                <div>
+                  <h3 className="font-display text-base font-bold text-white">Guía Informativa para Padres</h3>
+                  <p className="text-[10px] text-amber-400 font-bold uppercase tracking-wider">Sustento Pedagógico y Beneficios</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowParentsGuide(false)}
+                className="text-slate-400 hover:text-white transition p-1 bg-transparent border-0 cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto my-4 pr-1 space-y-4 text-xs text-slate-300 leading-relaxed">
+              
+              <div className="bg-slate-950/60 border border-slate-800/80 p-3.5 rounded-xl space-y-1.5">
+                <h4 className="font-black text-amber-400 uppercase tracking-wider text-[11px]">¿Qué es Senda de Valores?</h4>
+                <p>
+                  Es una plataforma gamificada diseñada para tender un puente de oro entre el mundo digital y la <strong>acción ética en la vida real</strong>. El juego utiliza mecánicas lúdicas de fantasía para impulsar al niño a completar retos reales que benefician su entorno, su desarrollo personal y su familia.
+                </p>
+              </div>
+
+              {/* Funcionamiento */}
+              <div className="space-y-2">
+                <h4 className="font-black text-teal-400 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                  <Zap size={14} />
+                  <span>¿Cómo Funciona?</span>
+                </h4>
+                <p>
+                  El juego presenta un mapa interactivo con desafíos físicos reales. El menor realiza una acción positiva en su hogar, escuela o comunidad. Para validar el reto y avanzar en el juego, <strong>es indispensable que el tutor ingrese su PIN secreto de 4 dígitos</strong> tras evaluar el esfuerzo del menor.
+                </p>
+              </div>
+
+              {/* Beneficios Niños */}
+              <div className="space-y-2 bg-slate-900/40 p-3.5 rounded-xl border border-slate-800/40">
+                <h4 className="font-black text-emerald-400 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                  <Trophy size={14} />
+                  <span>Beneficios Clave para Niños y Jóvenes</span>
+                </h4>
+                <ul className="space-y-2 pl-1">
+                  <li>
+                    <strong className="text-white">✓ Brújula Moral Interna:</strong> Los retos obligan a reflexionar sobre por qué actuamos bien, estimulando un pensamiento ético propio frente a la presión social.
+                  </li>
+                  <li>
+                    <strong className="text-white">✓ Ruptura del Sedentarismo:</strong> Cada logro en la pantalla exige entre 15 y 30 minutos de acción física, orden o interacción social en el mundo tangible.
+                  </li>
+                  <li>
+                    <strong className="text-white">✓ Autonomía y Autoestima:</strong> Fomenta la responsabilidad personal, logrando que realicen tareas del hogar o de civismo de forma voluntaria.
+                  </li>
+                </ul>
+              </div>
+
+              {/* Beneficios Familia */}
+              <div className="space-y-2">
+                <h4 className="font-black text-amber-400 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                  <Home size={14} />
+                  <span>Beneficios para la Familia</span>
+                </h4>
+                <ul className="space-y-2 pl-1">
+                  <li>
+                    <strong className="text-white">✓ Diálogo Intergeneracional:</strong> La validación obligatoria abre hermosos canales de conversación sobre valores e integridad cotidianos.
+                  </li>
+                  <li>
+                    <strong className="text-white">✓ Coexistencia Digital Saludable:</strong> Con cooldowns automáticos integrados para regular de forma sana el tiempo de pantalla.
+                  </li>
+                  <li>
+                    <strong className="text-white">✓ Cooperación Doméstica:</strong> Varios desafíos están enfocados en la corresponsabilidad en el hogar y en la resolución armónica de conflictos.
+                  </li>
+                </ul>
+              </div>
+
+              {/* Beneficios Comunidad */}
+              <div className="space-y-2 bg-slate-900/40 p-3.5 rounded-xl border border-slate-800/40">
+                <h4 className="font-black text-cyan-400 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                  <HeartHandshake size={14} />
+                  <span>Beneficios para la Comunidad</span>
+                </h4>
+                <ul className="space-y-2 pl-1">
+                  <li>
+                    <strong className="text-white">✓ Ciudadanía Activa:</strong> Promueve de manera directa el cuidado ambiental local, el respeto cívico y el apoyo solidario a los vecinos.
+                  </li>
+                  <li>
+                    <strong className="text-white">✓ Validación Cooperativa:</strong> Los retos en equipo utilizan un sistema seguro de códigos que enseña la confianza mutua y la lealtad entre compañeros.
+                  </li>
+                </ul>
+              </div>
+
+              {/* Seguridad */}
+              <div className="space-y-1.5 border-t border-slate-800 pt-3">
+                <h4 className="font-black text-[#dceef0] uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                  <Lock size={14} className="text-[#dceef0]" />
+                  <span>Estándares de Seguridad y Privacidad Infantil</span>
+                </h4>
+                <p className="text-[11px] text-slate-400">
+                  Cumplimos estrictamente las leyes COPPA de EE.UU. y GDPR-K de la Unión Europea: <strong>cero bases de datos en la nube</strong>, encriptación local segura del dispositivo y total ausencia de anuncios, compras o rastreadores comerciales.
+                </p>
+              </div>
+
+            </div>
+
+            {/* Footer */}
+            <div className="flex-shrink-0 pt-3 border-t border-slate-800">
+              <button
+                onClick={() => setShowParentsGuide(false)}
+                className="w-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs py-3 rounded-xl shadow-lg shadow-amber-500/10 transition-all cursor-pointer uppercase tracking-wider"
+              >
+                Entendido, Cerrar Guía
+              </button>
+            </div>
+
           </div>
         </div>
       )}
