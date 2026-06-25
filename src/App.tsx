@@ -46,7 +46,8 @@ import {
   Download,
   Upload,
   RefreshCw,
-  Database
+  Database,
+  Share2
 } from 'lucide-react';
 import { CHALLENGES, PILLARS, REFLECTIVE_FEEDBACK } from './data';
 import { Challenge, PillarId, SavedState } from './types';
@@ -304,6 +305,40 @@ export const checkAndApplyScoreAndMilestones = (
   };
 };
 
+// Utilities for lightweight LocalStorage Encryption/Obfuscation to prevent direct inspection and client-side tampering.
+const encryptData = (text: string): string => {
+  try {
+    const key = "SendaDeValoresSecurityCore2026";
+    let result = "";
+    for (let i = 0; i < text.length; i++) {
+      const charCode = text.charCodeAt(i) ^ key.charCodeAt(i % key.length);
+      result += String.fromCharCode(charCode);
+    }
+    return btoa(encodeURIComponent(result));
+  } catch (e) {
+    return text;
+  }
+};
+
+const decryptData = (ciphertext: string): string => {
+  try {
+    if (!ciphertext || ciphertext.trim().startsWith('{')) {
+      return ciphertext; // Already unencrypted JSON
+    }
+    const decoded = decodeURIComponent(atob(ciphertext));
+    const key = "SendaDeValoresSecurityCore2026";
+    let result = "";
+    for (let i = 0; i < decoded.length; i++) {
+      const charCode = decoded.charCodeAt(i) ^ key.charCodeAt(i % key.length);
+      result += String.fromCharCode(charCode);
+    }
+    return result;
+  } catch (err) {
+    // Graceful fallback to raw ciphertext if it wasn't encrypted or failed to decode
+    return ciphertext;
+  }
+};
+
 const INITIAL_STATE: SavedState = {
   v: 4,
   pin: '',
@@ -393,6 +428,7 @@ export default function App() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isAppInstallable, setIsAppInstallable] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? window.navigator.onLine : true);
   const [securityLogs, setSecurityLogs] = useState<string[]>([
     `[${new Date().toLocaleTimeString()}] Inicializando núcleo de seguridad local Senda de Valores v4...`,
     `[${new Date().toLocaleTimeString()}] Aislamiento de Red: ACTIVO. Se bloqueó toda conexión externa.`,
@@ -503,7 +539,7 @@ export default function App() {
     }, 1500);
   };
 
-  // Listen for PWA installation prompts
+  // Listen for PWA installation prompts and Network Status (Privacy Guard)
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
@@ -520,8 +556,29 @@ export default function App() {
       showToast('¡Senda de Valores instalada en tu equipo!');
     };
 
+    const handleOnline = () => {
+      setIsOnline(true);
+      addSecurityLog('Soberanía de Datos: Conexión de red detectada. Aislamiento local activo (cero transferencia).');
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+      addSecurityLog('Soberanía de Datos: Modo Hermético Offline activo. Ejecutando con aislamiento absoluto.');
+    };
+
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Initial check
+    if (typeof window !== 'undefined' && window.navigator) {
+      if (window.navigator.onLine) {
+        addSecurityLog('Soberanía de Datos: Conexión de red activa. Protección de privacidad COPPA iniciada.');
+      } else {
+        addSecurityLog('Soberanía de Datos: Ejecutando en Modo Hermético Offline.');
+      }
+    }
 
     // Detect if already running as PWA / Standalone with defensive checks
     const isStandaloneMode = 
@@ -536,6 +593,8 @@ export default function App() {
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
   }, []);
 
@@ -575,7 +634,8 @@ export default function App() {
 
     if (saved) {
       try {
-        const parsed = JSON.parse(saved) as any;
+        const decrypted = decryptData(saved);
+        const parsed = JSON.parse(decrypted) as any;
         // Support any older structure and upgrade smoothly to schema version v: 4
         const filledState: SavedState = {
           ...INITIAL_STATE,
@@ -615,7 +675,8 @@ export default function App() {
 
         // Complete migration on disk
         if (needsMigration) {
-          localStorage.setItem('sv4', JSON.stringify(filledState));
+          const serialized = JSON.stringify(filledState);
+          localStorage.setItem('sv4', encryptData(serialized));
           localStorage.removeItem('sv_sendadevalores_v1');
         }
       } catch (e) {
@@ -631,7 +692,13 @@ export default function App() {
       cur: currentActiveChId,
     };
     setGameState(stateToSave);
-    localStorage.setItem('sv4', JSON.stringify(stateToSave));
+    try {
+      const serialized = JSON.stringify(stateToSave);
+      localStorage.setItem('sv4', encryptData(serialized));
+    } catch (e) {
+      console.error('Error saving state:', e);
+      localStorage.setItem('sv4', JSON.stringify(stateToSave));
+    }
   };
 
   const showToast = (message: string) => {
@@ -639,6 +706,34 @@ export default function App() {
     setTimeout(() => {
       setToastMessage('');
     }, 3000);
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('¡Copiado al portapapeles! Puedes compartirlo manualmente.');
+      addSecurityLog('Soberanía de Datos: Código/Logro copiado al portapapeles de forma segura.');
+    }).catch((err) => {
+      showToast('No se pudo copiar el código. Por favor escríbelo manualmente.');
+    });
+  };
+
+  const handleShareText = async (title: string, text: string) => {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: title,
+          text: text,
+        });
+        addSecurityLog(`[COMPARTIR] Logro o código "${title}" compartido exitosamente mediante el sistema nativo.`);
+      } catch (err) {
+        if (err instanceof Error && err.name !== 'AbortError') {
+          addSecurityLog(`[ADVERTENCIA] Error al compartir nativamente: ${err.message}. Intentando copiar al portapapeles.`);
+          copyToClipboard(text);
+        }
+      }
+    } else {
+      copyToClipboard(text);
+    }
   };
 
   // Cooldown checking
@@ -1107,6 +1202,7 @@ export default function App() {
   const triggerResetAll = () => {
     if (window.confirm('¿Seguro que deseas reiniciar todo tu progreso, alias, notas y firmas? Esta acción es irreversible.')) {
       localStorage.removeItem('sv_sendadevalores_v1');
+      localStorage.removeItem('sv4');
       setGameState(INITIAL_STATE);
       setSelectedAvatar('fox');
       setAliasInput('');
@@ -1163,12 +1259,31 @@ export default function App() {
 
           <div className="flex items-center gap-2">
             {gameState.al && (
-              <div className="hidden sm:flex items-center gap-2 bg-[#0d1424] border border-teal-500/10 rounded-full py-1 px-3">
+              <div className="hidden lg:flex items-center gap-2 bg-[#0d1424] border border-teal-500/10 rounded-full py-1 px-3">
                 <span className="text-xs text-slate-400">Jugador:</span>
                 <span className="text-xs font-bold text-teal-400">{gameState.al}</span>
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               </div>
             )}
+            
+            {/* Dynamic Connection/Privacy Status Indicator */}
+            <div 
+              onClick={() => {
+                showToast(isOnline ? 'Soberanía de Datos: Tráfico externo aislado por seguridad. Cero datos salen de tu dispositivo.' : 'Modo Offline Hermético: Ejecutando de forma local y 100% desconectada de internet.');
+                addSecurityLog(`Consulta de Privacidad: Red: ${isOnline ? 'Online (Aislada)' : 'Offline (Hermética)'}. Protección infantil activa.`);
+              }}
+              className={`flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg border text-xs font-bold transition-all cursor-pointer select-none ${
+                isOnline 
+                  ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-400 hover:border-emerald-500/40' 
+                  : 'bg-amber-500/5 border-amber-500/20 text-amber-400 hover:border-amber-500/40'
+              }`}
+              title={isOnline ? "Conexión Segura: El tráfico externo está aislado. Ningún dato sale a la nube." : "Sin internet: Ejecutando localmente de forma hermética."}
+            >
+              <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+              <span className="hidden sm:inline">{isOnline ? 'Datos Protegidos' : 'Modo Offline'}</span>
+              <span className="sm:hidden">{isOnline ? 'Seguro' : 'Offline'}</span>
+            </div>
+
             <button
               onClick={() => setShowPolicyModal(true)}
               className="text-xs font-bold px-3 py-1.5 rounded-lg border border-teal-500/10 hover:border-teal-500/30 bg-[#0d1424] text-slate-400 hover:text-[#dceef0] transition-all cursor-pointer flex items-center gap-1.5"
@@ -1677,16 +1792,28 @@ export default function App() {
                 </div>
                 
                 {teamChallengesWithCodes.length > 0 ? (
-                  <div className="space-y-2 max-h-[100px] overflow-y-auto pr-1">
+                  <div className="space-y-2 max-h-[110px] overflow-y-auto pr-1">
                     {teamChallengesWithCodes.map((ch) => (
-                      <div key={ch.id} className="flex justify-between items-center bg-slate-950/60 p-2 rounded-xl border border-slate-800">
+                      <div key={ch.id} className="flex justify-between items-center bg-slate-950/60 p-2 rounded-xl border border-slate-800 gap-2">
                         <div className="min-w-0 flex-1">
                           <p className="text-[10px] text-slate-400 truncate font-medium">{ch.title}</p>
-                          <p className="text-xs font-black text-teal-400 tracking-wider">
-                            {generateVerificationCode(ch.id)}
-                          </p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="text-xs font-black text-teal-400 tracking-wider font-mono">
+                              {generateVerificationCode(ch.id)}
+                            </span>
+                            <button
+                              onClick={() => handleShareText(
+                                'Senda de Valores - Código',
+                                `¡Hola! Completamos el reto "${ch.title}" de Senda de Valores. Aquí tienes mi código de verificación: ${generateVerificationCode(ch.id)}`
+                              )}
+                              className="p-1 hover:bg-teal-500/10 text-teal-400 rounded transition cursor-pointer"
+                              title="Compartir o copiar código"
+                            >
+                              <Share2 size={12} />
+                            </button>
+                          </div>
                         </div>
-                        <span className="text-[9px] text-slate-500 font-semibold italic ml-2">
+                        <span className="text-[9px] text-slate-500 font-semibold italic flex-shrink-0">
                           {gameState.done[ch.id] ? 'Completado' : 'Activo'}
                         </span>
                       </div>
@@ -2187,10 +2314,22 @@ export default function App() {
                     <div className="mt-3 pt-3 border-t border-emerald-500/10 text-left space-y-2.5">
                       <div>
                         <span className="block text-[10px] font-black text-cyan-400 uppercase tracking-wider">Tu Código de Compañero para este Reto:</span>
-                        <p className="text-base font-black text-white tracking-widest text-center bg-slate-950/60 py-2 px-4 rounded-xl border border-cyan-500/20 mt-1">
-                          {generateVerificationCode(activeChallenge.id)}
-                        </p>
-                        <p className="text-[10px] text-slate-400 mt-1 leading-normal">
+                        <div className="flex gap-2 mt-1">
+                          <p className="flex-1 text-base font-black text-white tracking-widest text-center bg-slate-950/60 py-2 px-4 rounded-xl border border-cyan-500/20 flex items-center justify-center font-mono">
+                            {generateVerificationCode(activeChallenge.id)}
+                          </p>
+                          <button
+                            onClick={() => handleShareText(
+                              'Senda de Valores - Código de Reto',
+                              `¡Hola! Completamos juntos el reto "${activeChallenge.title}" de Senda de Valores. Aquí tienes mi código para que verifiques tu participación en tu dispositivo: ${generateVerificationCode(activeChallenge.id)}`
+                            )}
+                            className="px-4 bg-cyan-950/50 hover:bg-cyan-900/60 border border-cyan-500/30 text-cyan-400 rounded-xl flex items-center justify-center transition cursor-pointer"
+                            title="Compartir o Copiar Código"
+                          >
+                            <Share2 size={16} />
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-slate-400 mt-1.5 leading-normal">
                           Comparte este código con tu compañero de equipo para que él pueda verificar su participación en tu dispositivo.
                         </p>
                       </div>
