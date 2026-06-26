@@ -416,6 +416,12 @@ export default function App() {
   const [showPolicyModal, setShowPolicyModal] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
+  // Splash Screen States
+  const [showSplash, setShowSplash] = useState(true);
+  const [splashProgress, setSplashProgress] = useState(0);
+  const [splashAnimate, setSplashAnimate] = useState(false);
+  const [splashFadeOut, setSplashFadeOut] = useState(false);
+
   // Parent restore lives state
   const [showParentsGuide, setShowParentsGuide] = useState(false);
   const [showRechargeModal, setShowRechargeModal] = useState(false);
@@ -539,6 +545,39 @@ export default function App() {
       showToast('¡Verificación completa! Todos los archivos de la app son 100% auténticos y seguros.');
     }, 1500);
   };
+
+  // Splash Screen Initial Timer & Animation Progress
+  useEffect(() => {
+    // Start entrance scale-up after a slight delay
+    const startTimer = setTimeout(() => {
+      setSplashAnimate(true);
+    }, 150);
+
+    // Animate progress bar over 2.5 seconds
+    const interval = setInterval(() => {
+      setSplashProgress((prev) => {
+        if (prev >= 100) return 100;
+        return prev + 4; // increments of 4%
+      });
+    }, 100);
+
+    // Trigger fade-out transition after 2.6 seconds
+    const fadeTimer = setTimeout(() => {
+      setSplashFadeOut(true);
+    }, 2600);
+
+    // Completely remove splash screen from DOM after 3.2 seconds
+    const removeTimer = setTimeout(() => {
+      setShowSplash(false);
+    }, 3200);
+
+    return () => {
+      clearTimeout(startTimer);
+      clearInterval(interval);
+      clearTimeout(fadeTimer);
+      clearTimeout(removeTimer);
+    };
+  }, []);
 
   // Listen for PWA installation prompts and Network Status (Privacy Guard)
   useEffect(() => {
@@ -1234,6 +1273,66 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#080c18] text-[#dceef0] font-sans relative overflow-x-hidden selection:bg-teal-500 selection:text-slate-900 pb-16">
+      {/* 🎬 SPLASH SCREEN INTRO TRANSITION */}
+      {showSplash && (
+        <div
+          className={`fixed inset-0 z-[100] bg-[#060a13] flex flex-col items-center justify-center p-6 select-none transition-all duration-[700ms] ease-in-out ${
+            splashFadeOut ? 'opacity-0 scale-105 pointer-events-none' : 'opacity-100 scale-100'
+          }`}
+          style={{
+            backgroundImage: 'radial-gradient(circle at center, rgba(20, 184, 166, 0.12) 0%, transparent 65%)'
+          }}
+        >
+          <div className="flex flex-col items-center max-w-sm text-center">
+            {/* Centered logo with custom glow entrance */}
+            <div
+              className={`w-60 h-60 sm:w-72 sm:h-72 rounded-3xl overflow-hidden border border-teal-500/25 bg-[#090f1d] p-1.5 shadow-[0_0_50px_rgba(20,184,166,0.25)] transition-all duration-1000 ease-out transform flex items-center justify-center relative ${
+                splashAnimate ? 'scale-100 rotate-0 opacity-100' : 'scale-90 rotate-1 opacity-0'
+              }`}
+            >
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Compass className="text-teal-500/20 w-24 h-24 animate-pulse" />
+              </div>
+              <img
+                src="/logo.png"
+                alt=""
+                className="w-full h-full object-cover rounded-2xl relative z-10"
+                referrerPolicy="no-referrer"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
+            </div>
+
+            {/* Slogan & brand concept */}
+            <div className={`mt-8 transition-all duration-1000 delay-300 transform ${splashAnimate ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+              <h2 className="font-display font-black text-amber-400 tracking-[0.3em] text-sm sm:text-base uppercase">
+                Juega. Descubre. Transforma.
+              </h2>
+              <p className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider mt-1.5">
+                Desafíos Reales · Cambios Reales · Tú Haces La Diferencia
+              </p>
+            </div>
+
+            {/* Gaming Loading Indicator */}
+            <div className={`w-48 bg-slate-900/90 border border-slate-800/60 h-2 rounded-full overflow-hidden mt-8 shadow-inner transition-all duration-1000 delay-500 ${splashAnimate ? 'opacity-100' : 'opacity-0'}`}>
+              <div
+                className="bg-gradient-to-r from-teal-500 via-cyan-400 to-amber-400 h-full rounded-full transition-all duration-100 ease-out shadow-[0_0_8px_rgba(20,184,166,0.5)]"
+                style={{ width: `${splashProgress}%` }}
+              />
+            </div>
+
+            {/* Progress Label */}
+            <span className="text-[9px] font-mono text-slate-500 mt-2 uppercase tracking-widest animate-pulse">
+              Cargando Aventura... {Math.min(100, splashProgress)}%
+            </span>
+
+            {/* Developer signoff */}
+            <div className="absolute bottom-8 left-0 right-0 text-center text-slate-600 font-mono text-[9px] uppercase tracking-widest">
+              Vinci Consultores • Senda de Valores v4
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Background Decorative Sparkles */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
         <div className="absolute top-1/4 left-1/10 w-96 h-96 rounded-full bg-teal-500/5 blur-[120px]" />
@@ -1252,10 +1351,17 @@ export default function App() {
       <header className="sticky top-0 z-40 bg-[#080c18]/90 backdrop-blur-md border-b border-teal-500/10 px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => setScreen('land')}>
-            <div className="p-1.5 rounded-lg bg-teal-500/10 border border-teal-500/30">
-              <Trophy className="text-teal-400" size={20} />
+            <div className="w-8 h-8 rounded-lg overflow-hidden border border-teal-500/20 bg-[#0d1424] p-0.5 flex items-center justify-center relative">
+              <Compass className="absolute text-teal-500/30 w-4 h-4" />
+              <img
+                src="/symbol.png"
+                alt=""
+                className="w-full h-full object-contain relative z-10"
+                referrerPolicy="no-referrer"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
             </div>
-            <span className="font-display font-black text-sm tracking-widest text-teal-400">SENDA DE VALORES</span>
+            <span className="font-display font-black text-xs sm:text-sm tracking-widest text-teal-400">SENDA DE VALORES</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -1312,18 +1418,31 @@ export default function App() {
         {/* 1. LANDING SCREEN */}
         {screen === 'land' && (
           <div className="flex flex-col items-center justify-center min-h-[70vh] text-center max-w-lg mx-auto py-12">
-            <p className="text-xs font-black tracking-[0.3em] text-teal-400 mb-4 uppercase">DESAFÍOS REALES · EDUCACIÓN ÉTICA</p>
-            <h1 className="font-display text-5xl sm:text-6xl font-black mb-4 tracking-tight leading-none text-white drop-shadow-lg">
-              SENDA DE<br />VALORES
+            {/* Immersive Symbol Badge */}
+            <div className="w-36 h-36 rounded-full overflow-hidden border-2 border-teal-500/30 bg-[#0d1424] p-1.5 shadow-[0_0_40px_rgba(20,184,166,0.2)] mb-6 flex items-center justify-center relative group">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-teal-500/10 via-transparent to-amber-500/10" />
+              <Compass className="absolute text-teal-500/20 w-16 h-16 animate-pulse" />
+              <img
+                src="/symbol.png"
+                alt=""
+                className="w-full h-full object-contain relative z-10 filter drop-shadow-[0_2px_10px_rgba(20,184,166,0.3)]"
+                referrerPolicy="no-referrer"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
+            </div>
+
+            <p className="text-xs font-black tracking-[0.3em] text-teal-400 mb-2 uppercase">JUEGA. DESCUBRE. TRANSFORMA.</p>
+            <h1 className="font-display text-4xl sm:text-5xl font-black mb-4 tracking-tight leading-none text-white drop-shadow-lg uppercase">
+              SENDA DE VALORES
             </h1>
-            <p className="text-slate-400 text-sm sm:text-base mb-8 leading-relaxed max-w-md">
-              Un juego sin pantallas invasivas. Completa desafíos con tus amigos y familia en tu entorno real, reflexiona sobre tus valores, gana insignias y conviértete en una leyenda de tu comunidad.
+            <p className="text-slate-400 text-xs sm:text-sm mb-8 leading-relaxed max-w-md">
+              Un videojuego de aventuras con impacto real. Completa misiones éticas de civismo en tu entorno físico, gana insignias legendarias y conviértete en el héroe de tu comunidad.
             </p>
 
             <div className="grid grid-cols-3 gap-6 w-full max-w-sm mb-10 text-xs text-slate-400 font-bold">
               <div className="p-3 bg-[#0d1424] border border-teal-500/10 rounded-xl flex flex-col items-center gap-2">
                 <Flame className="text-amber-400" size={18} />
-                <span>16 Desafíos</span>
+                <span>16 Misiones</span>
               </div>
               <div className="p-3 bg-[#0d1424] border border-teal-500/10 rounded-xl flex flex-col items-center gap-2">
                 <Users className="text-emerald-400" size={18} />
@@ -1331,8 +1450,20 @@ export default function App() {
               </div>
               <div className="p-3 bg-[#0d1424] border border-teal-500/10 rounded-xl flex flex-col items-center gap-2">
                 <ShieldAlert className="text-cyan-400" size={18} />
-                <span>0 Datos Nube</span>
+                <span>Aislamiento 100%</span>
               </div>
+            </div>
+
+            {/* 📜 EL JURAMENTO DEL EXPLORADOR */}
+            <div className="w-full bg-[#0d1424]/40 border border-teal-500/20 rounded-2xl p-5 mb-8 text-center relative overflow-hidden backdrop-blur-sm shadow-xl max-w-md">
+              <span className="block text-[10px] font-black text-amber-400 tracking-[0.2em] uppercase mb-2">
+                El Juramento del Explorador
+              </span>
+              <p className="text-slate-300 italic text-[11px] leading-relaxed max-w-xs mx-auto">
+                “Me comprometo a usar esta aventura para crecer, ayudar y aprender. Prometo actuar con respeto, cuidar a las personas, proteger mi comunidad y recordar que el verdadero valor no está en los puntos que gano, sino en la persona en la que me convierto.”
+              </p>
+              <div className="absolute top-2 left-3 text-teal-500/10 text-6xl font-serif select-none pointer-events-none">“</div>
+              <div className="absolute bottom-2 right-3 text-teal-500/10 text-6xl font-serif select-none pointer-events-none">”</div>
             </div>
 
             <div className="w-full max-w-sm mb-6">
@@ -1373,7 +1504,7 @@ export default function App() {
               }}
               className="w-full sm:w-auto bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-black text-base px-10 py-4 rounded-xl shadow-lg shadow-teal-500/20 transform hover:-translate-y-0.5 active:translate-y-0.5 transition-all cursor-pointer"
             >
-              EMPEZAR EL RETO
+              INICIAR LA AVENTURA
             </button>
 
             <p className="text-[11px] text-slate-500 mt-4 leading-relaxed">
@@ -1836,7 +1967,7 @@ export default function App() {
                           </div>
                         </div>
                         <span className="text-[9px] text-slate-500 font-semibold italic flex-shrink-0">
-                          {gameState.done[ch.id] ? 'Completado' : 'Activo'}
+                          {gameState.done[ch.id] ? 'Misión Cumplida' : 'Activa'}
                         </span>
                       </div>
                     ))}
@@ -1844,7 +1975,7 @@ export default function App() {
                 ) : (
                   <div className="text-center py-2 bg-slate-950/40 rounded-xl border border-dashed border-slate-800">
                     <p className="text-[11px] text-slate-500 leading-normal italic px-3">
-                      No tienes retos en equipo activos o completados para generar códigos.
+                      No tienes misiones en equipo activas o cumplidas para generar códigos.
                     </p>
                   </div>
                 )}
@@ -1873,10 +2004,19 @@ export default function App() {
             {/* LEGEND DIPLOMA CARD AT 16/16 */}
             {completedChallengesCount === 16 && (
               <div className="bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-amber-500/10 border-2 border-amber-400/40 rounded-2xl p-6 text-center shadow-xl shadow-amber-400/5 animate-pulse">
-                <Trophy className="text-amber-400 mx-auto mb-3" size={48} />
+                <div className="w-16 h-16 rounded-full border border-amber-400/30 bg-slate-900 p-1 flex items-center justify-center mx-auto mb-3 shadow-[0_0_20px_rgba(245,158,11,0.2)] relative">
+                  <Compass className="absolute text-amber-500/20 w-8 h-8" />
+                  <img
+                    src="/symbol.png"
+                    alt=""
+                    className="w-full h-full object-contain filter drop-shadow-[0_2px_8px_rgba(245,158,11,0.3)] relative z-10"
+                    referrerPolicy="no-referrer"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
+                </div>
                 <h2 className="font-display text-2xl font-black text-amber-400 uppercase tracking-widest mb-1">¡HAS CONSEGUIDO LA SENDA COMPLETA!</h2>
                 <p className="text-slate-300 text-xs sm:text-sm max-w-md mx-auto mb-4">
-                  Completaste con éxito los 16 desafíos de valores. Has demostrado resiliencia, respeto, empatía y liderazgo real. Tu diploma de leyenda está listo.
+                  Completaste con éxito las 16 misiones de valores. Has demostrado resiliencia, respeto, empatía y liderazgo real en el mundo real. Tu diploma de leyenda está listo.
                 </p>
                 <button
                   onClick={() => setScreen('dip')}
@@ -1957,7 +2097,7 @@ export default function App() {
                                 </h4>
                                 <div className="flex items-center gap-2 mt-0.5">
                                   <span className="text-[10px] text-slate-500 font-bold uppercase">
-                                    {isDone ? (isVer ? 'Verificado' : 'Completado') : `+${ch.exp} XP`}
+                                    {isDone ? (isVer ? 'Verificado' : 'Misión Cumplida') : `+${ch.exp} XP`}
                                   </span>
                                   {isTeammate && (
                                     <span className="bg-cyan-500/5 text-cyan-400 border border-cyan-500/20 rounded text-[9px] px-1 font-bold">
@@ -2329,7 +2469,7 @@ export default function App() {
               {/* Action buttons */}
               {gameState.done[activeChallenge.id] ? (
                 <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl text-center space-y-3">
-                  <span className="text-emerald-400 font-bold text-xs uppercase tracking-wider block">Desafío completado con éxito</span>
+                  <span className="text-emerald-400 font-bold text-xs uppercase tracking-wider block">¡Misión Cumplida con éxito!</span>
                   <p className="text-xs text-slate-400 italic">" {gameState.done[activeChallenge.id].t} "</p>
                   
                   {activeChallenge.eqp === 'equipo' && (
@@ -2408,7 +2548,7 @@ export default function App() {
                     disabled={!safetyAgreed[activeChallenge.id]}
                     className="flex-1 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-black py-3.5 px-6 rounded-xl text-sm transition shadow-lg disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                   >
-                    REGISTRAR COMO COMPLETADO
+                    REGISTRAR MISIÓN CUMPLIDA
                   </button>
                 </div>
               )}
@@ -2444,15 +2584,22 @@ export default function App() {
 
               <span className="block text-[10px] font-black text-amber-700 tracking-[0.4em] mb-4 uppercase">SENDA DE VALORES</span>
 
-              <div className="w-16 h-16 rounded-full border-4 border-amber-600/60 bg-amber-600/5 flex items-center justify-center mx-auto mb-4">
-                <Trophy size={32} className="text-amber-700" />
+              <div className="w-16 h-16 rounded-full border border-amber-600/30 bg-white p-1 flex items-center justify-center mx-auto mb-4 shadow-[0_0_15px_rgba(217,119,6,0.15)] relative">
+                <Compass className="absolute text-amber-700/20 w-8 h-8" />
+                <img
+                  src="/symbol.png"
+                  alt=""
+                  className="w-full h-full object-contain relative z-10"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
               </div>
 
               <h2 className="font-display text-2xl sm:text-4xl font-black text-amber-900 tracking-tight leading-none mb-1">
                 DIPLOMA DE LEYENDA
               </h2>
               <p className="text-amber-800 text-[11px] font-bold tracking-widest uppercase mb-4">
-                Por haber completado con honor los 16 desafíos de civismo y propósito
+                Por haber completado con honor el viaje del Explorador
               </p>
 
               <div className="w-32 h-0.5 bg-gradient-to-r from-transparent via-amber-700/40 to-transparent mx-auto mb-6" />
@@ -2497,8 +2644,8 @@ export default function App() {
                 </div>
               </div>
 
-              <p className="text-xs text-slate-700 max-w-md mx-auto leading-relaxed mb-6">
-                Quien ha demostrado de manera práctica un profundo compromiso con el bienestar común, el respeto a su entorno, el auxilio ante emergencias, el fortalecimiento de habilidades manuales y la escucha respetuosa hacia los adultos mayores y miembros de su vecindario.
+              <p className="text-xs text-slate-700 max-w-md mx-auto leading-relaxed mb-6 font-medium">
+                Ha demostrado iniciativa, servicio, reflexión y compromiso con su comunidad, completando el viaje inicial del Explorador en Senda de Valores.
               </p>
 
               {/* Insignias grid in Certificate */}
@@ -2828,8 +2975,8 @@ export default function App() {
                 <MessageSquare size={18} />
               </div>
               <div>
-                <h3 className="font-display text-sm font-bold text-white">Escribe tu Reflexión</h3>
-                <p className="text-[10px] text-slate-400">Desafío: {activeChallenge.title}</p>
+                <h3 className="font-display text-sm font-bold text-white">Bitácora de la Misión</h3>
+                <p className="text-[10px] text-slate-400">Misión: {activeChallenge.title}</p>
               </div>
             </div>
 
